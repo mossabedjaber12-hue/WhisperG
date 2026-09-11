@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Whisper</title>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firebaseio.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+    <!-- AUTH -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <div class="brand-mark">✧</div>
+            <h1 id="authTitle">Whisper</h1>
+            <p id="authSubtitle">A quiet place to talk.</p>
+
+            <div class="auth-form" id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" autocomplete="email" />
+                <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
+                <button id="loginBtn">Log In</button>
+                <div class="auth-links">
+                    <a href="#" id="forgotLink">Forgot password?</a>
+                    <a href="#" id="toSignupLink">Create account</a>
+                </div>
+            </div>
+
+            <div class="auth-form" id="signupForm" style="display:none;">
+                <input type="email" id="signupEmail" placeholder="Email" autocomplete="email" />
+                <input type="text" id="signupUsername" placeholder="Username (lowercase, 3-14 chars)" maxlength="14" />
+                <input type="text" id="signupDisplayName" placeholder="Display name" maxlength="20" />
+                <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
+                <input type="password" id="signupConfirm" placeholder="Confirm password" autocomplete="new-password" />
+                <button id="signupBtn">Create Account</button>
+                <div class="auth-links">
+                    <a href="#" id="toLoginLink">Already have an account? Log in</a>
+                </div>
+            </div>
+
+            <div class="auth-form" id="forgotForm" style="display:none;">
+                <input type="email" id="forgotEmail" placeholder="Your email" />
+                <button id="forgotBtn">Send Reset Link</button>
+                <div class="auth-links">
+                    <a href="#" id="backToLoginLink">Back to login</a>
+                </div>
+            </div>
+
+            <div class="auth-message" id="authMessage"></div>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app" id="chatApp" style="display:none;">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    <span class="brand">✧ Whisper</span>
+                    <div class="sidebar-title-actions">
+                        <button class="icon-btn" id="themeToggle" title="Toggle theme">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                        <button class="icon-btn" id="newGroupBtn" title="New group">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="sidebar-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="sidebarSearch" placeholder="Search conversations..." />
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" id="navFriends">
+                    <i class="fas fa-user-group"></i>
+                    <span>Friends</span>
+                    <span class="nav-badge" id="pendingBadge" style="display:none;">0</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span>Conversations</span>
+                </div>
+                <div class="dm-list" id="dmList">
+                    <div class="dm-empty">No conversations yet</div>
+                </div>
+            </div>
+
+            <div class="user-panel" id="userPanel">
+                <div class="user-panel-avatar" id="userAvatar">?</div>
+                <div class="user-panel-info">
+                    <span class="user-panel-name" id="usernameDisplay">User</span>
+                    <span class="user-panel-status" id="userStatus">Online</span>
+                </div>
+                <button class="icon-btn" id="settingsBtn" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main" id="mainContent">
+
+            <!-- FRIENDS -->
+            <div class="view active" data-view="friends">
+                <div class="view-header">
+                    <div class="view-title">
+                        <i class="fas fa-user-group"></i>
+                        <h2>Friends</h2>
+                    </div>
+                </div>
+
+                <div class="view-tabs">
+                    <button class="tab active" data-tab="online">Online</button>
+                    <button class="tab" data-tab="all">All</button>
+                    <button class="tab" data-tab="pending">Pending <span class="tab-badge" id="pendingTabBadge">0</span></button>
+                    <button class="tab" data-tab="add">Add Friend</button>
+                </div>
+
+                <div class="view-body">
+                    <div class="tab-panel active" data-panel="online">
+                        <div class="friend-ribbon" id="onlineRibbon"></div>
+                        <div id="onlineList"></div>
+                    </div>
+                    <div class="tab-panel" data-panel="all">
+                        <div class="friend-ribbon" id="allRibbon"></div>
+                        <div id="allList"></div>
+                    </div>
+                    <div class="tab-panel" data-panel="pending">
+                        <div id="pendingList"></div>
+                    </div>
+                    <div class="tab-panel" data-panel="add">
+                        <div class="add-friend-panel">
+                            <h3>Add a friend</h3>
+                            <p class="add-friend-desc">Search by username. Usernames are lowercase and unique.</p>
+                            <div class="add-friend-input">
+                                <input type="text" id="userSearchInput" placeholder="username" maxlength="14" />
+                                <button id="searchBtn">Send Request</button>
+                            </div>
+                            <div class="search-results" id="searchResults" style="display:none;">
+                                <div id="searchResultsList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DM -->
+            <div class="view" data-view="dm">
+                <div class="view-header">
+                    <div class="view-title" id="dmHeaderClickable">
+                        <div class="dm-header-avatar" id="dmHeaderAvatar">?</div>
+                        <div class="dm-header-info">
+                            <h2 id="dmHeaderName">Chat</h2>
+                            <span class="dm-header-status" id="dmHeaderStatus">Offline</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-search-bar" id="dmSearchBar" style="display:none;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="dmSearchInput" placeholder="Search messages..." />
+                    <button class="chat-search-close" id="dmSearchClose"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="view-body" style="padding:0;display:flex;flex-direction:column;">
+                    <div class="messages" id="dmMessages"></div>
+                    <div class="typing-indicator" id="dmTyping"></div>
+                </div>
+
+                <div class="upload-preview" id="uploadPreview" style="display:none;">
+                    <div class="preview-content" id="previewContent"></div>
+                    <button class="preview-remove" id="previewRemove"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="recording-indicator" id="recordingIndicator" style="display:none;">
+                    <span class="rec-dot"></span>
+                    <span class="rec-text">Recording <span id="recTime">0:00</span></span>
+                    <button class="rec-cancel" id="recCancel"><i class="fas fa-times"></i></button>
+                    <button class="rec-send" id="recSend"><i class="fas fa-paper-plane"></i></button>
+                </div>
+
+                <div class="reply-preview" id="dmReplyPreview" style="display:none;">
+                    <div class="reply-bar"></div>
+                    <div class="reply-info">
+                        <span class="reply-name" id="dmReplyName"></span>
+                        <span class="reply-text" id="dmReplyText"></span>
+                    </div>
+                    <button class="reply-cancel" id="dmReplyCancel"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="edit-bar" id="dmEditBar" style="display:none;">
+                    <i class="fas fa-pen"></i>
+                    <div class="edit-info">
+                        <span class="edit-label">Editing message</span>
+                        <span class="edit-text" id="dmEditText"></span>
+                    </div>
+                    <button class="edit-cancel" id="dmEditCancel"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="view-input">
+                    <button class="input-btn" id="dmAttachBtn" title="Attach"><i class="fas fa-plus"></i></button>
+                    <input type="text" id="dmInput" placeholder="Write a message..." maxlength="500" />
+                    <button class="input-btn" id="dmEmojiBtn" title="Emoji"><i class="fas fa-face-smile"></i></button>
+                    <button class="input-btn" id="dmMicBtn" title="Voice message"><i class="fas fa-microphone"></i></button>
+                    <button class="input-send" id="dmSendBtn"><i class="fas fa-arrow-up"></i></button>
+
+                    <input type="file" id="dmImageInput" accept="image/*" style="display:none;" />
+                    <input type="file" id="dmFileInput" accept="*/*" style="display:none;" />
+
+                    <div class="attach-menu" id="dmAttachMenu">
+                        <button class="attach-item" data-type="image">
+                            <i class="fas fa-image"></i>
+                            <span>Photo</span>
+                        </button>
+                        <button class="attach-item" data-type="file">
+                            <i class="fas fa-file"></i>
+                            <span>File</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GROUP -->
+            <div class="view" data-view="group">
+                <div class="view-header">
+                    <div class="view-title" id="groupHeaderClickable">
+                        <div class="dm-header-avatar group-avatar" id="groupHeaderAvatar"><i class="fas fa-users"></i></div>
+                        <div class="dm-header-info">
+                            <h2 id="groupHeaderName">Group</h2>
+                            <span class="dm-header-status" id="groupHeaderMembers">0 members</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-search-bar" id="groupSearchBar" style="display:none;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="groupSearchInput" placeholder="Search messages..." />
+                    <button class="chat-search-close" id="groupSearchClose"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="view-body" style="padding:0;display:flex;flex-direction:column;">
+                    <div class="messages" id="groupMessages"></div>
+                </div>
+
+                <div class="upload-preview" id="groupUploadPreview" style="display:none;">
+                    <div class="preview-content" id="groupPreviewContent"></div>
+                    <button class="preview-remove" id="groupPreviewRemove"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="recording-indicator" id="groupRecordingIndicator" style="display:none;">
+                    <span class="rec-dot"></span>
+                    <span class="rec-text">Recording <span id="groupRecTime">0:00</span></span>
+                    <button class="rec-cancel" id="groupRecCancel"><i class="fas fa-times"></i></button>
+                    <button class="rec-send" id="groupRecSend"><i class="fas fa-paper-plane"></i></button>
+                </div>
+
+                <div class="reply-preview" id="groupReplyPreview" style="display:none;">
+                    <div class="reply-bar"></div>
+                    <div class="reply-info">
+                        <span class="reply-name" id="groupReplyName"></span>
+                        <span class="reply-text" id="groupReplyText"></span>
+                    </div>
+                    <button class="reply-cancel" id="groupReplyCancel"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="edit-bar" id="groupEditBar" style="display:none;">
+                    <i class="fas fa-pen"></i>
+                    <div class="edit-info">
+                        <span class="edit-label">Editing message</span>
+                        <span class="edit-text" id="groupEditText"></span>
+                    </div>
+                    <button class="edit-cancel" id="groupEditCancel"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="view-input">
+                    <button class="input-btn" id="groupAttachBtn" title="Attach"><i class="fas fa-plus"></i></button>
+                    <input type="text" id="groupInput" placeholder="Write a message..." maxlength="500" />
+                    <button class="input-btn" id="groupEmojiBtn" title="Emoji"><i class="fas fa-face-smile"></i></button>
+                    <button class="input-btn" id="groupMicBtn" title="Voice message"><i class="fas fa-microphone"></i></button>
+                    <button class="input-send" id="groupSendBtn"><i class="fas fa-arrow-up"></i></button>
+
+                    <input type="file" id="groupImageInput" accept="image/*" style="display:none;" />
+                    <input type="file" id="groupFileInput" accept="*/*" style="display:none;" />
+
+                    <div class="attach-menu" id="groupAttachMenu">
+                        <button class="attach-item" data-type="image">
+                            <i class="fas fa-image"></i>
+                            <span>Photo</span>
+                        </button>
+                        <button class="attach-item" data-type="file">
+                            <i class="fas fa-file"></i>
+                            <span>File</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAT PROFILE TAB -->
+            <div class="view" data-view="chatProfile">
+                <div class="chat-profile-header">
+                    <button class="back-btn" id="chatProfileBack"><i class="fas fa-arrow-left"></i></button>
+                </div>
+                <div class="chat-profile-body">
+                    <div class="chat-profile-avatar-wrapper">
+                        <div class="chat-profile-avatar" id="chatProfileAvatar">?</div>
+                    </div>
+                    <div class="chat-profile-name" id="chatProfileName">User</div>
+                    <div class="chat-profile-status" id="chatProfileStatus">Offline</div>
+
+                    <div class="chat-profile-actions">
+                        <button class="chat-profile-action" id="cpActionProfile">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </button>
+                        <button class="chat-profile-action" id="cpActionSearch">
+                            <i class="fas fa-search"></i>
+                            <span>Search</span>
+                        </button>
+                        <button class="chat-profile-action" id="cpActionMute">
+                            <i class="fas fa-bell"></i>
+                            <span>Mute</span>
+                        </button>
+                        <button class="chat-profile-action" id="cpActionOptions">
+                            <i class="fas fa-ellipsis"></i>
+                            <span>Options</span>
+                        </button>
+                    </div>
+
+                    <div class="chat-profile-rows">
+                        <button class="chat-profile-row" id="cpRowNickname">
+                            <div class="row-icon-wrap"><i class="fas fa-tag"></i></div>
+                            <div class="row-text">
+                                <span class="row-title">Nickname</span>
+                                <span class="row-sub" id="cpNicknameValue">No nickname</span>
+                            </div>
+                        </button>
+
+                        <button class="chat-profile-row" id="cpRowDisappearing">
+                            <div class="row-icon-wrap"><i class="fas fa-clock"></i></div>
+                            <div class="row-text">
+                                <span class="row-title">Disappearing messages</span>
+                                <span class="row-sub" id="cpDisappearingValue">Off</span>
+                            </div>
+                        </button>
+
+                        <button class="chat-profile-row" id="cpRowPrivacy">
+                            <div class="row-icon-wrap"><i class="fas fa-lock"></i></div>
+                            <div class="row-text">
+                                <span class="row-title">Privacy &amp; safety</span>
+                                <span class="row-sub">Manage your safety</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WELCOME -->
+            <div class="view" data-view="welcome">
+                <div class="welcome">
+                    <div class="welcome-inner">
+                        <div class="welcome-icon">✧</div>
+                        <h2>Nothing here yet</h2>
+                        <p>Find a friend by their username to start a quiet conversation.</p>
+                        <button class="welcome-btn" id="welcomeAddBtn">
+                            <i class="fas fa-user-plus"></i> Add a friend
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ACCOUNT MENU -->
+        <div class="account-menu" id="accountMenu">
+            <div class="account-header">
+                <div class="account-avatar" id="accountMenuAvatar">?</div>
+                <div class="account-info">
+                    <span class="account-displayname" id="accountMenuDisplayName">Display Name</span>
+                    <span class="account-username" id="accountMenuUsername">@username</span>
+                </div>
+            </div>
+            <div class="account-divider"></div>
+            <button class="account-item" id="myProfileBtn">
+                <i class="fas fa-user"></i>
+                <span>My Profile</span>
+            </button>
+            <button class="account-item" id="themeMenuItem">
+                <i class="fas fa-moon"></i>
+                <span>Dark Mode</span>
+            </button>
+            <button class="account-item danger" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log Out</span>
+            </button>
+        </div>
+
+        <!-- CONTEXT MENU -->
+        <div class="context-menu" id="contextMenu">
+            <button class="context-item" data-action="profile"><i class="fas fa-user"></i> View Profile</button>
+            <button class="context-item" data-action="mark-read"><i class="fas fa-check-double"></i> Mark as read</button>
+            <button class="context-item" data-action="pin"><i class="fas fa-thumbtack"></i> <span id="ctxPinLabel">Pin</span></button>
+            <button class="context-item" data-action="mute"><i class="fas fa-bell-slash"></i> <span id="ctxMuteLabel">Mute</span></button>
+            <div class="context-divider"></div>
+            <button class="context-item danger" data-action="remove"><i class="fas fa-user-minus"></i> Remove friend</button>
+            <button class="context-item danger" data-action="delete"><i class="fas fa-trash"></i> Delete conversation</button>
+        </div>
+
+        <!-- OPTIONS MENU (chat profile) -->
+        <div class="context-menu" id="chatOptionsMenu">
+            <button class="context-item" data-cp-action="search"><i class="fas fa-search"></i> Search in chat</button>
+            <button class="context-item" data-cp-action="view-profile"><i class="fas fa-user"></i> View full profile</button>
+            <div class="context-divider"></div>
+            <button class="context-item danger" data-cp-action="block"><i class="fas fa-ban"></i> Block user</button>
+            <button class="context-item danger" data-cp-action="report"><i class="fas fa-flag"></i> Report user</button>
+            <div class="context-divider"></div>
+            <button class="context-item danger" data-cp-action="delete"><i class="fas fa-trash"></i> Delete conversation</button>
+        </div>
+
+        <!-- NEW GROUP MODAL -->
+        <div class="modal-overlay" id="newGroupModal">
+            <div class="profile-modal">
+                <button class="modal-close" id="newGroupClose"><i class="fas fa-times"></i></button>
+                <div class="profile-body">
+                    <h2 class="profile-name">New Group</h2>
+                    <p class="profile-username">Pick friends to include</p>
+                    <div class="profile-form">
+                        <label class="profile-label">Group name</label>
+                        <input type="text" class="profile-input" id="groupNameInput" maxlength="30" placeholder="Name your group" />
+                        <label class="profile-label" style="margin-top:20px;">Members</label>
+                        <div class="group-picker" id="groupPicker"></div>
+                        <div class="profile-actions">
+                            <button class="profile-btn-secondary" id="newGroupCancelBtn">Cancel</button>
+                            <button class="profile-btn-primary" id="newGroupCreateBtn">Create</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GROUP MEMBERS MODAL -->
+        <div class="modal-overlay" id="groupMembersModal">
+            <div class="profile-modal">
+                <button class="modal-close" id="groupMembersClose"><i class="fas fa-times"></i></button>
+                <div class="profile-body">
+                    <h2 class="profile-name">Members</h2>
+                    <p class="profile-username" id="groupMembersCount">0 members</p>
+                    <div class="group-members-list" id="groupMembersList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD MEMBERS MODAL -->
+        <div class="modal-overlay" id="addMembersModal">
+            <div class="profile-modal">
+                <button class="modal-close" id="addMembersClose"><i class="fas fa-times"></i></button>
+                <div class="profile-body">
+                    <h2 class="profile-name">Add Members</h2>
+                    <p class="profile-username">Pick friends to add</p>
+                    <div class="group-picker" id="addMembersPicker"></div>
+                    <div class="profile-actions">
+                        <button class="profile-btn-secondary" id="addMembersCancelBtn">Cancel</button>
+                        <button class="profile-btn-primary" id="addMembersConfirmBtn">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LIGHTBOX -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose"><i class="fas fa-times"></i></button>
+        <img id="lightboxImg" src="" alt="Preview" />
+    </div>
+
+    <!-- PROFILE VIEW MODAL -->
+    <div class="modal-overlay" id="profileViewModal">
+        <div class="profile-modal">
+            <button class="modal-close" id="profileViewClose"><i class="fas fa-times"></i></button>
+            <div class="profile-banner">
+                <div class="profile-banner-gradient" id="viewBannerGradient"></div>
+            </div>
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="viewAvatar">?</div>
+            </div>
+            <div class="profile-body">
+                <h2 class="profile-name" id="viewDisplayName">Display Name</h2>
+                <p class="profile-username" id="viewUsername">@username</p>
+                <p class="profile-status" id="viewStatus"><span class="profile-dot"></span> Online</p>
+                <p class="profile-bio" id="viewBio">No bio yet.</p>
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span id="viewJoined">Joined recently</span>
+                    </div>
+                </div>
+                <div class="profile-actions-row" id="profileActionsRow"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="profile-modal">
+            <button class="modal-close" id="editProfileClose"><i class="fas fa-times"></i></button>
+            <div class="profile-banner" id="editBanner" style="cursor:pointer;">
+                <div class="profile-banner-gradient" id="editBannerGradient"></div>
+                <div class="banner-edit-overlay">
+                    <i class="fas fa-camera"></i>
+                    <span>Change banner</span>
+                </div>
+            </div>
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="editAvatar" style="cursor:pointer;">
+                    ?
+                    <div class="avatar-edit-overlay"><i class="fas fa-camera"></i></div>
+                </div>
+            </div>
+            <div class="profile-body">
+                <div class="profile-form">
+                    <label class="profile-label">Display name</label>
+                    <input type="text" class="profile-input" id="editDisplayNameInput" maxlength="20" />
+
+                    <label class="profile-label">Username <span class="profile-label-hint">(changeable every 15 days)</span></label>
+                    <input type="text" class="profile-input" id="editUsernameInput" maxlength="14" />
+                    <p class="profile-hint" id="usernameChangeHint"></p>
+
+                    <label class="profile-label">Bio</label>
+                    <textarea class="profile-input profile-textarea" id="editBioInput" maxlength="150" placeholder="A short line about you..."></textarea>
+                    <p class="profile-hint"><span id="bioCount">0</span>/150</p>
+
+                    <div class="profile-actions">
+                        <button class="profile-btn-secondary" id="editCancelBtn">Cancel</button>
+                        <button class="profile-btn-primary" id="editSaveBtn">Save</button>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none;" />
+            <input type="file" id="bannerInput" accept="image/*" style="display:none;" />
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="settings-modal">
+            <div class="settings-sidebar">
+                <div class="settings-user">
+                    <div class="settings-user-avatar" id="settingsUserAvatar">?</div>
+                    <div class="settings-user-info">
+                        <span class="settings-user-name" id="settingsUserName">Display</span>
+                        <span class="settings-user-username" id="settingsUserUsername">@user</span>
+                    </div>
+                </div>
+                <div class="settings-nav">
+                    <button class="settings-nav-item active" data-section="account">
+                        <i class="fas fa-user"></i> Account
+                    </button>
+                    <button class="settings-nav-item" data-section="notifications">
+                        <i class="fas fa-bell"></i> Notifications
+                    </button>
+                    <button class="settings-nav-item" data-section="blocked">
+                        <i class="fas fa-ban"></i> Blocked
+                    </button>
+                    <button class="settings-nav-item" data-section="about">
+                        <i class="fas fa-info-circle"></i> About
+                    </button>
+                </div>
+                <button class="settings-logout" id="settingsLogout">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </button>
+            </div>
+
+            <div class="settings-main">
+                <button class="modal-close" id="settingsClose"><i class="fas fa-times"></i></button>
+
+                <div class="settings-section active" data-section="account">
+                    <h2 class="settings-title">Account</h2>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Display Name</span>
+                            <span class="settings-row-value" id="infoDisplayName">Display Name</span>
+                        </div>
+                        <button class="settings-btn" data-action="edit-profile">Edit</button>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Username</span>
+                            <span class="settings-row-value" id="infoUsername">@username</span>
+                        </div>
+                        <button class="settings-btn" data-action="edit-profile">Edit</button>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Email</span>
+                            <span class="settings-row-value" id="infoEmail">email@example.com</span>
+                        </div>
+                        <span class="settings-note">Private</span>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Bio</span>
+                            <span class="settings-row-value" id="infoBio">No bio yet</span>
+                        </div>
+                        <button class="settings-btn" data-action="edit-profile">Edit</button>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Export my data</span>
+                            <span class="settings-row-value muted">Download a JSON copy of your profile</span>
+                        </div>
+                        <button class="settings-btn" data-action="export-data">Export</button>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Clear all drafts</span>
+                            <span class="settings-row-value muted">Remove saved unsent messages</span>
+                        </div>
+                        <button class="settings-btn" data-action="clear-drafts">Clear</button>
+                    </div>
+                    <h2 class="settings-title danger-title">Danger Zone</h2>
+                    <div class="settings-row danger">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Delete account</span>
+                            <span class="settings-row-value muted">Permanently remove your account and data</span>
+                        </div>
+                        <button class="settings-btn danger" data-action="delete-account">Delete</button>
+                    </div>
+                </div>
+
+                <div class="settings-section" data-section="notifications">
+                    <h2 class="settings-title">Notifications</h2>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Message sounds</span>
+                            <span class="settings-row-value muted">Play a sound on new messages</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="notifToggle" checked /><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Typing indicators</span>
+                            <span class="settings-row-value muted">Show when someone is typing</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="typingToggle" checked /><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Message reactions</span>
+                            <span class="settings-row-value muted">Show reaction options on hover</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="reactionsToggle" checked /><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Enter to send</span>
+                            <span class="settings-row-value muted">Enter sends, Shift+Enter = new line</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="enterSendToggle" checked /><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Compact mode</span>
+                            <span class="settings-row-value muted">Tighter spacing</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="compactToggle" /><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label">Date separators</span>
+                            <span class="settings-row-value muted">Show "Today" / "Yesterday"</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="dateSepToggle" checked /><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+
+                <div class="settings-section" data-section="blocked">
+                    <h2 class="settings-title">Blocked Users</h2>
+                    <p class="settings-row-value muted" style="padding:0 0 16px;">Users you've blocked can't message you or see your profile.</p>
+                    <div id="blockedList"></div>
+                </div>
+
+                <div class="settings-section" data-section="about">
+                    <h2 class="settings-title">About</h2>
+                    <div class="about">
+                        <div class="about-logo">✧</div>
+                        <div class="about-name">Whisper</div>
+                        <div class="about-version">Version 1.0</div>
+                        <p class="about-desc">A quiet chat app. No noise, no glow, just conversations.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- GROUP SETTINGS MODAL -->
+    <div class="modal-overlay" id="groupSettingsModal">
+        <div class="profile-modal">
+            <button class="modal-close" id="groupSettingsClose"><i class="fas fa-times"></i></button>
+            <div class="profile-banner" id="groupSettingsBanner" style="cursor:pointer;">
+                <div class="profile-banner-gradient" id="groupSettingsBannerGradient"></div>
+                <div class="banner-edit-overlay">
+                    <i class="fas fa-camera"></i>
+                    <span>Change group photo</span>
+                </div>
+            </div>
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="groupSettingsAvatar" style="cursor:pointer;">
+                    <i class="fas fa-users"></i>
+                    <div class="avatar-edit-overlay"><i class="fas fa-camera"></i></div>
+                </div>
+            </div>
+            <div class="profile-body">
+                <div class="profile-form">
+                    <label class="profile-label">Group name</label>
+                    <input type="text" class="profile-input" id="groupSettingsNameInput" maxlength="30" />
+                    <p class="profile-hint" id="groupSettingsHint"></p>
+                    <div class="profile-actions">
+                        <button class="profile-btn-secondary" id="groupSettingsCancelBtn">Cancel</button>
+                        <button class="profile-btn-primary" id="groupSettingsSaveBtn">Save</button>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="groupPhotoInput" accept="image/*" style="display:none;" />
+        </div>
+    </div>
+
+    <!-- NICKNAME MODAL -->
+    <div class="modal-overlay" id="nicknameModal">
+        <div class="profile-modal">
+            <button class="modal-close" id="nicknameClose"><i class="fas fa-times"></i></button>
+            <div class="profile-body">
+                <h2 class="profile-name">Nickname</h2>
+                <p class="profile-username">Only you will see this</p>
+                <div class="profile-form">
+                    <input type="text" class="profile-input" id="nicknameInput" maxlength="30" placeholder="Enter a nickname" />
+                    <div class="profile-actions">
+                        <button class="profile-btn-secondary" id="nicknameClearBtn">Clear</button>
+                        <button class="profile-btn-primary" id="nicknameSaveBtn">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMOJI PICKER -->
+    <div class="emoji-picker" id="emojiPicker">
+        <div class="emoji-picker-tabs">
+            <button class="emoji-tab active" data-cat="smileys">😀</button>
+            <button class="emoji-tab" data-cat="gestures">👍</button>
+            <button class="emoji-tab" data-cat="hearts">❤️</button>
+            <button class="emoji-tab" data-cat="animals">🐶</button>
+            <button class="emoji-tab" data-cat="food">🍔</button>
+            <button class="emoji-tab" data-cat="objects">💡</button>
+        </div>
+        <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+
+    <!-- REACTION PICKER -->
+    <div class="reaction-picker" id="reactionPicker">
+        <button class="reaction-option" data-emoji="👍">👍</button>
+        <button class="reaction-option" data-emoji="❤️">❤️</button>
+        <button class="reaction-option" data-emoji="😂">😂</button>
+        <button class="reaction-option" data-emoji="😮">😮</button>
+        <button class="reaction-option" data-emoji="😢">😢</button>
+        <button class="reaction-option" data-emoji="🔥">🔥</button>
+        <button class="reaction-option" data-emoji="🎉">🎉</button>
+        <button class="reaction-option" data-emoji="👀">👀</button>
+    </div>
+
+    <!-- CUSTOM MODAL -->
+    <div class="custom-modal-overlay" id="customModal">
+        <div class="custom-modal" id="customModalBox"></div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <script defer src="script.js"></script>
+</body>
+</html>
